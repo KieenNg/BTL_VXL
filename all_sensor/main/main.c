@@ -134,17 +134,8 @@ esp_err_t pms7003_readData(uint32_t *pm1_0, uint32_t *pm2_5, uint32_t *pm10)
     return ESP_OK;
 }
 
-void app_assign_task(void) {
-    xTaskCreate(rx_mhz14a_task, "uart_rx_mhz14a_task", 1024 * 2, NULL, configMAX_PRIORITIES - 1, NULL);
-    xTaskCreate(tx_mhz14a_task, "uart_tx_mhz14a_task", 1024 * 2, NULL, configMAX_PRIORITIES - 2, NULL);
-    xTaskCreate(rx_pms7003_task, "uart_rx_pms7003_task", 1024 * 2, NULL, configMAX_PRIORITIES - 1, NULL);
-}
-
-void app_main(void)
+static void i2c_bme280_task(void *arg)
 {
-    app_uart_init();
-    app_assign_task();
-
     // BMX280 sensor setup
     i2c_config_t i2c_cfg = {
         .mode = I2C_MODE_MASTER,
@@ -186,4 +177,17 @@ void app_main(void)
         ESP_LOGI("test", "Read Values: temp = %.4f, pres = %.4f, hum = %.4f", temp, pres, hum);
         vTaskDelay(2000 / portTICK_PERIOD_MS); // Add a delay to allow other tasks to run
     }
+}
+
+void app_assign_task(void) {
+    xTaskCreate(rx_mhz14a_task, "uart_rx_mhz14a_task", 1024 * 2, NULL, configMAX_PRIORITIES - 1, NULL);
+    xTaskCreate(tx_mhz14a_task, "uart_tx_mhz14a_task", 1024 * 2, NULL, configMAX_PRIORITIES - 2, NULL);
+    xTaskCreate(rx_pms7003_task, "uart_rx_pms7003_task", 1024 * 2, NULL, configMAX_PRIORITIES - 1, NULL);
+    xTaskCreate(i2c_bme280_task, "i2c_bme280_task", 1024 * 2, NULL, configMAX_PRIORITIES - 1, NULL);
+}
+
+void app_main(void)
+{
+    app_uart_init();
+    app_assign_task();
 }
